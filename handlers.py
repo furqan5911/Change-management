@@ -133,3 +133,28 @@ def checks_message(userid, chatid, user_question, formated_history, embeddings, 
         "bussiness_info": bussinessInfo, 
         "check_type": checkType
     })
+def inspired_me(user_question, generalInfo, bussinessInfo):
+
+    model = ChatOpenAI(model_name='gpt-4o', temperature=0.9)
+
+    template = """
+    As you are a smart assistan please based on give information fill all the questions answers you take refrence from the given information and other than you can Answer all the questions by yourself.
+    you can answer with hypothetical data and in response you just give the answer question nothing else information.
+    Given background Change Managemnt information on Form {general_info} and User info at the time of registration {bussiness_info}
+    Here is the question you need to answer: {question}
+    Just make sure the answers are realistic and unique but matches the background and Scenario.
+    """
+    prompt = ChatPromptTemplate.from_template(template)
+
+    chain = (
+        {
+            "question": itemgetter("question"),
+            "general_info": itemgetter("general_info"),
+            "bussiness_info": itemgetter("bussiness_info")
+        }
+        | prompt
+        | model
+        | StrOutputParser()
+    )
+
+    return chain.invoke({"question": user_question, "general_info": generalInfo, "bussiness_info":bussinessInfo})
