@@ -4,7 +4,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_pinecone import PineconeVectorStore
-from handlers import assessment_message, survey_message, checks_message
+from handlers import assessment_message, survey_message, checks_message, inspired_me
 from utils import load_environment_variables
 
 # Load environment variables
@@ -78,50 +78,12 @@ if chat_message:
     st.session_state['chat_history'].append(f"AI: {response}")
     res_area.markdown(response)
 
-def generate_report(userid, chatid, chat_history, generalInfo, bussinessInfo, selected_option, selected_category):
-    model = ChatOpenAI(model_name='gpt-4', temperature=0.7, max_tokens=4096)
-    embeddings = OpenAIEmbeddings()
-    vectorstore = PineconeVectorStore(index_name='quickstart', embedding=embeddings, pinecone_api_key=os.getenv("PINECONE_API_KEY"), namespace=chatid)
-    retriever = vectorstore.as_retriever()
 
-    template = """
-    You are an expert in change management. You are given the following general information about an organization:
-    General Info: {general_info}
-    Business Info: {bussiness_info}
-    Chat History: {chat_history}
 
-    Based on the information provided and the selected option {selected_option} in category {selected_category}, generate a comprehensive report.
-    The report should cover all relevant aspects of the selected category and option, ensuring it adheres to international standards.
-    """
+# Button for the inspired_me function
+if st.button('Inspire Me'):
+    response = inspired_me(chat_message, generalInfo, bussinessInfo)
+    st.session_state['chat_history'].append(f"User: {chat_message}")
+    st.session_state['chat_history'].append(f"AI: {response}")
+    st.chat_message("assistant").markdown(response)
 
-    prompt = ChatPromptTemplate.from_template(template)
-
-    context = {
-        "general_info": generalInfo,
-        "bussiness_info": bussinessInfo,
-        "chat_history": "\n".join(chat_history),
-        "selected_option": selected_option,
-        "selected_category": selected_category
-    }
-
-    # Prepare the final prompt with the context
-    final_prompt = prompt.format(**context)
-
-    # Invoke the model with the final prompt
-    response = model.predict(final_prompt)
-
-    return response
-
-# Button to generate the final report
-if st.button('Generate Report'):
-    report = generate_report(
-        userid,
-        chatid,
-        st.session_state['chat_history'],
-        generalInfo,
-        bussinessInfo,
-        st.session_state['selected_option'],
-        st.session_state['selected_category']
-    )
-    st.subheader("Generated Report")
-    st.write(report)
